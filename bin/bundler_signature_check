@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'rubygems/security'
+require 'bundler'
+
+results = []
+
+policies = Gem::Security::Policies.keys.reverse
+
+runtime = Bundler.load
+runtime.specs.each do |spec|
+  gem_path = "#{Bundler.rubygems.gem_dir}/cache/#{spec.full_name}.gem"
+  if !File.exists?(gem_path)
+    STDERR.puts "#{spec.full_name} does not seem to be cached - run `bundle install` first"
+  end
+
+  last_error = nil
+  policies.each do |policy|
+    begin
+      gem = Bundler.rubygems.gem_from_path(gem_path, policy)
+      results << [spec.full_name, policy, last_error]
+      break
+    rescue Exception => e
+      last_error = e.message
+    end
+  end
+end
+
+p results
