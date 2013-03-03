@@ -12,19 +12,34 @@ runtime = Bundler.load
 runtime.specs.each do |spec|
   gem_path = "#{Bundler.rubygems.gem_dir}/cache/#{spec.full_name}.gem"
   if !File.exists?(gem_path)
-    STDERR.puts "#{spec.full_name} does not seem to be cached - run `bundle install` first"
-  end
-
-  last_error = nil
-  policies.each do |policy|
-    begin
-      gem = Bundler.rubygems.gem_from_path(gem_path, policy)
-      results << [spec.full_name, policy, last_error]
-      break
-    rescue Exception => e
-      last_error = e.message
+    STDERR.puts "WARNING: #{spec.full_name} does not seem to be cached - maybe a git gem? Or you need to run `bundle install`"
+    results << {name: spec.full_name, policy: 'Unknown', warning: 'Gem missing from cache'}
+  else
+    last_error = nil
+    policies.each do |policy|
+      begin
+        gem = Bundler.rubygems.gem_from_path(gem_path, policy)
+        results << {name: spec.full_name, policy: policy, warning: last_error}
+        break
+      rescue Exception => e
+        last_error = e.message
+      end
     end
   end
 end
 
-p results
+# Pivot the results by security policy
+(policies + ['Unknown']).each do |policy|
+  gems_in_policy = results.find_all { |r| r[:policy] == policy}
+  if gems_in_policy.any?
+    STDOUT.puts "#{policy}:"
+    gems_in_policy.each do |gem|
+      if gem[:warning]
+        STDOUT.puts "  #{gem[:name]}: #{gem[:warning]}"
+      else
+        STDOUT.puts "  #{gem[:name]}"
+      end
+    end
+    STDOUT.puts
+  end
+end
