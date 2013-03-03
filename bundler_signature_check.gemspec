@@ -18,6 +18,9 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
+  spec.cert_chain  = ['certs/brad-meldium-public.pem']
+  spec.signing_key = File.expand_path("~/.gem/brad-meldium-private.pem") if $0 =~ /gem\z/
+
   spec.add_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
 end
